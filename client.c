@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <netinet/in.h>
 #include <stdbool.h>
+#include<fcntl.h>
 
 #define PORT 3000
 #define BUFFER_SIZE 1024
@@ -61,7 +62,7 @@ char* process_command(char* input) {
         sprintf(result, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
     } 
     else if (strcmp(input, "quit") == 0) {
-        snprintf(result, 1024, "%s", input);
+        exit(0);
     } 
     else {
         snprintf(result, 1024, "Invalid Command");
