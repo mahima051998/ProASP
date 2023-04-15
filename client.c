@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <netinet/in.h>
+#include <stdbool.h>
 
 #define PORT 3000
 #define BUFFER_SIZE 1024
