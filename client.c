@@ -25,7 +25,7 @@ char* validate(char* command) {
         snprintf(result, BUFFER_SIZE, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f -newermt \"%s\" ! -newermt \"%s\")", res[0], res[1]);
     } else if (sscanf(command, "getfiles %[^\n]", result) == 1) {
         char* token;
-        char files[BUFFER_SIZE] = "";
+        char files[1024] = "";
         int count = 0;
         token = strtok(result, " ");
         while (token != NULL) {
@@ -33,28 +33,28 @@ char* validate(char* command) {
             if (count > 0) {
                 strcat(files, "-o ");
             }
-            snprintf(tmp, BUFFER_SIZE, "-name %s ", token);
+            snprintf(tmp, 1024, "-name %s ", token);
             strcat(files, tmp);
             count++;
             token = strtok(NULL, " ");
         }
-        snprintf(result, BUFFER_SIZE, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
+        snprintf(result, 1024, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
     } else if (sscanf(command, "gettargz %[^\n]", result) == 1) {
         char* token;
-        char files[BUFFER_SIZE] = "";
+        char files[1024] = "";
         int count = 0;
         token = strtok(result, " ");
         while (token != NULL) {
-            char tmp[BUFFER_SIZE];
+            char tmp[1024];
             if (count > 0) {
                 strcat(files, "-o ");
             }
-            snprintf(tmp, BUFFER_SIZE, "-iname \"*.%s\" ", token);
+            snprintf(tmp, 1024, "-iname \"*.%s\" ", token);
             strcat(files, tmp);
             count++;
             token = strtok(NULL, " ");
         }
-        snprintf(result, BUFFER_SIZE, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
+        snprintf(result, 1024, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
     } else if (strcmp(command, "quit") == 0) {
         snprintf(result, BUFFER_SIZE, "%s", command);
     } else {
