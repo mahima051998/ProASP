@@ -38,7 +38,7 @@ char* process_command(char* input) {
             count++;
             token = strtok(NULL, " ");
         }
-        snprintf(result, 1024, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
+        sprintf(result, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
     } 
     else if (sscanf(input, "gettargz %[^\n]", result) == 1) {
         char files[1024] = "";
@@ -54,7 +54,7 @@ char* process_command(char* input) {
             count++;
             token = strtok(NULL, " ");
         }
-        snprintf(result, 1024, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
+        sprintf(result, "zip temp.tar.gz $(find ~/ -maxdepth 1 -type f %s)", files);
     } 
     else if (strcmp(input, "quit") == 0) {
         snprintf(result, 1024, "%s", input);
