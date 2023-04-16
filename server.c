@@ -84,6 +84,7 @@ int main() {
     while (true) {
         // Accept a client connection and create a new thread to handle the client request
         client_socket = accept(server_socket, (struct sockaddr*)&client_address, &address_length);
+        printf("Server connection has been established with client\n");
         if (client_socket == -1) {
             perror("accept failed");
             exit(EXIT_FAILURE);
