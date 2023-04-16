@@ -198,6 +198,6 @@ int main()
 			perror("close failed"); // print an error message
 			exit(EXIT_FAILURE); // exit the program with failure status
 		}
-
+    }
 		return 0; // exit the program with success status
 		}
