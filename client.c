@@ -19,7 +19,7 @@ char* process_command(char* input) {
 
     // If the command matches the "findfile" pattern, find the file and store the result in the result string.
     if (sscanf(input, "findfile %ms", &args[0]) == 1) {
-        sprintf(result, 1024, "output=$(find ~/ -maxdepth 1 -type f -name %s -exec stat -c '%%s\\t%%w\\t%%n' {} \\; | head -n 1); if [ -z \"$output\" ]; then echo \"File not found\"; else echo -e \"$output\"; fi", args[0]);
+        sprintf(result, "output=$(find ~/ -maxdepth 1 -type f -name %s -exec stat -c '%%s\\t%%w\\t%%n' {} \\; | head -n 1); if [ -z \"$output\" ]; then echo \"File not found\"; else echo -e \"$output\"; fi", args[0]);
         free(args[0]);
     } 
     // If the command matches the "sgetfiles" pattern, get files based on their size range and store the result in the result string.
