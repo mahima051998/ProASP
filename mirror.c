@@ -1,111 +1,119 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
+#include <sys/socket.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <pthread.h>
 
-// Define the maximum length of user command and server output
-#define MAX_COMMAND_LENGTH 1024
-#define MAX_OUTPUT_LENGTH 1024
+#define BUFFER_SIZE 1024
+#define MAX_CONNECTIONS 4 // Maximum number of connections to handle
 
-int main()
+// Function to handle client connections
+void *handle_connection(void *arg)
 {
-    int client_socket; // Declare a client socket file descriptor
-    struct sockaddr_in server_address; // Declare a server address struct
-    char user_command[MAX_COMMAND_LENGTH]; // Declare a buffer to store user command input
-    char server_output[MAX_OUTPUT_LENGTH]; // Declare a buffer to store server output
-    char *result; // Declare a pointer to store the result of the validate function
-    int flags, select_result; // Declare variables for storing socket flags and select results
+    int client_sock = *((int *)arg); // Cast argument to integer pointer and dereference to get client socket
+    char buf[BUFFER_SIZE];
+    FILE *fp;
 
-    // Create a TCP socket with IPv4 address family and default protocol (0)
-    client_socket = socket(AF_INET, SOCK_STREAM, 0);
-
-    if (client_socket == -1)
-    {
-        perror("socket failed"); // Print an error message if the socket creation fails
-        exit(EXIT_FAILURE);
-    }
-
-    // Set up the server address
-    memset(&server_address, 0, sizeof(server_address)); // Zero out the server address struct
-    server_address.sin_family = AF_INET; // Set the address family to IPv4
-    server_address.sin_port = htons(3000); // Set the port number to 3000 and convert it to network byte order
-    server_address.sin_addr.s_addr = inet_addr("127.0.0.1"); // Set the IP address to localhost (127.0.0.1)
-
-    // Connect to the server using the client socket and server address
-    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
-    {
-        perror("connect failed"); // Print an error message if the connection fails
-        exit(EXIT_FAILURE);
-    }
-
-    // Set the socket to non-blocking mode
-    flags = fcntl(client_socket, F_GETFL, 0); // Get the current socket flags
-    fcntl(client_socket, F_SETFL, flags | O_NONBLOCK); // Set the socket to non-blocking mode
-
-    // Enter the main loop for sending and receiving data
+    // Keep handling requests until connection is closed or client requests to quit
     while (1)
     {
-        // Prompt the user to enter a command
-        printf("Enter command: ");
-        fgets(user_command, MAX_COMMAND_LENGTH, stdin); // Get user input from stdin
-
-        // Remove the trailing newline character from the user input
-        if (user_command[strlen(user_command) - 1] == '\n')
+        memset(buf, 0, BUFFER_SIZE);
+        if (recv(client_sock, buf, BUFFER_SIZE, 0) <= 0)
         {
-            user_command[strlen(user_command) - 1] = '\0'; // Replace the newline character with a null terminator
+            break; // connection closed
         }
 
-        // Call the process_command function to validate the user input
-        result = process_command(user_command); // Pass the user input to the process_command function and store the result in the pointer
-
-        // Send the validated command to the server using the client socket
-        if (send(client_socket, result, strlen(result), 0) == -1)
+        if (strcmp(buf, "quit") == 0)
         {
-            perror("send failed"); // Print an error message if the send operation fails
+            break; // client requested to quit
+        }
+
+        // Execute the command and send the result to the client
+        fp = popen(buf, "r"); // Open a process to execute the command and read the output
+        if (fp == NULL)
+        {
+            perror("popen failed");
             exit(EXIT_FAILURE);
         }
 
-        // Use select to check for data received from the server
-        fd_set read_fds; // Declare a file descriptor set for reading
-        FD_ZERO(&read_fds); // Initialize the file descriptor set to zero
-        FD_SET(client_socket, &read_fds); // Add the client socket to the file descriptor set
-        struct timeval timeout; // Declare a timeval struct for the timeout value
-        timeout.tv_sec = 1; // Set
-		timeout.tv_usec = 0;
+        memset(buf, 0, BUFFER_SIZE);
+        while (fgets(buf, BUFFER_SIZE, fp))
+        {
+            send(client_sock, buf, strlen(buf), 0); // Send each line of output to the client
+            memset(buf, 0, BUFFER_SIZE);
+        }
 
-		select_result = select(client_socket + 1, &read_fds, NULL, NULL, &timeout); // wait until there is data to read or timeout occurs
+        pclose(fp); // Close the process
+    }
 
-		if (select_result == -1) // check for errors in select
-		{
-			perror("select failed"); // print an error message
-			exit(EXIT_FAILURE); // exit the program with failure status
-		}
-		else if (select_result == 0) // if no data is available to read
-		{
-			// No data received from the server, continue to the next iteration
-			continue;
-		}
-		else // if data is available to read
-		{
-		// Receive data from the server and print it to the console
-		memset(server_output, 0, sizeof(server_output)); // initialize server_output to all zeroes
-		while (recv(client_socket, server_output, sizeof(server_output), 0) > 0) // loop through all the data received from the server
-		{
-			printf("%s", server_output); // print the received data to the console
-			memset(server_output, 0, sizeof(server_output)); // clear the buffer for the next iteration
-		}
-		}
-
-		// Close the client socket
-		if (close(client_socket) == -1) // check for errors in closing the socket
-		{
-			perror("close failed"); // print an error message
-			exit(EXIT_FAILURE); // exit the program with failure status
-		}
+    close(client_sock); // Close the client socket
+    return NULL;
 }
-		return 0; // exit the program with success status
-		}
+
+int main()
+{
+    int server_sock;
+    struct sockaddr_in server_addr, client_addr;
+    socklen_t addr_len = sizeof(client_addr);
+
+    server_sock = socket(AF_INET, SOCK_STREAM, 0); // Create a socket for the server
+    if (server_sock == -1)
+    {
+        perror("socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(4000); // Set the port number for the server
+    server_addr.sin_addr.s_addr = INADDR_ANY; // Bind to any available network interface
+    memset(server_addr.sin_zero, 0, sizeof(server_addr.sin_zero));
+
+    if (bind(server_sock, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) // Bind the socket to the server address
+    {
+        perror("bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(server_sock, MAX_CONNECTIONS) == -1) // Listen for client connections
+    {
+        perror("listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    int conn_count = 0; // Counter for number of connections
+    while (1)
+    {
+        int client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len); // Accept a client connection
+        if (client_sock == -1)
+        {
+            perror("accept failed");
+            exit(EXIT_FAILURE);
+        }
+
+        if (conn_count < MAX_CONNECTIONS)
+        {
+            // Handle first 4 connections in separate threads
+            pthread_t thread;
+            if (pthread_create(&thread, NULL, handle_connection, (void *)&client_sock) != 0) // Create a new thread to handle the connection
+            {
+                perror("failed to create thread");
+                exit(EXIT_FAILURE);
+            }
+            pthread_detach(thread); // Detach the thread to allow it to run independently
+        }
+        else
+        {
+            // Close connection if it's beyond the first 4
+            close(client_sock);
+        }
+
+        conn_count++;
+    }
+
+    close(server_sock);
+    return 0;
+}
