@@ -90,114 +90,86 @@ char* process_command(char* input) {
     return result;
 }
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <fcntl.h>
-#include <unistd.h>
-
-// Define the maximum length of user command and server output
-#define MAX_COMMAND_LENGTH 1024
-#define MAX_OUTPUT_LENGTH 1024
-
-int main()
-{
-    int client_socket; // Declare a client socket file descriptor
-    struct sockaddr_in server_address; // Declare a server address struct
-    char user_command[MAX_COMMAND_LENGTH]; // Declare a buffer to store user command input
-    char server_output[MAX_OUTPUT_LENGTH]; // Declare a buffer to store server output
-    char *result; // Declare a pointer to store the result of the validate function
-    int flags, select_result; // Declare variables for storing socket flags and select results
+int main() {
+    // Create a socket for the client
+    int client_socket;
+    struct sockaddr_in server_address;
 
     // Create a TCP socket with IPv4 address family and default protocol (0)
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
 
-    if (client_socket == -1)
-    {
-        perror("socket failed"); // Print an error message if the socket creation fails
-        exit(EXIT_FAILURE);
-    }
-
-    // Set up the server address
-    memset(&server_address, 0, sizeof(server_address)); // Zero out the server address struct
-    server_address.sin_family = AF_INET; // Set the address family to IPv4
-    server_address.sin_port = htons(3000); // Set the port number to 3000 and convert it to network byte order
-    server_address.sin_addr.s_addr = inet_addr("127.0.0.1"); // Set the IP address to localhost (127.0.0.1)
+    // Set up the server address with the specified port number and IP address
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(3000);
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
+    memset(server_address.sin_zero, 0, sizeof(server_address.sin_zero));
 
     // Connect to the server using the client socket and server address
-    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
-    {
-        perror("connect failed"); // Print an error message if the connection fails
+    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1) {
+        perror("connect failed");
         exit(EXIT_FAILURE);
     }
 
-    // Set the socket to non-blocking mode
-    flags = fcntl(client_socket, F_GETFL, 0); // Get the current socket flags
-    fcntl(client_socket, F_SETFL, flags | O_NONBLOCK); // Set the socket to non-blocking mode
+    // Set the client socket to non-blocking mode
+    int socket_flags = fcntl(client_socket, F_GETFL, 0);
+    fcntl(client_socket, F_SETFL, socket_flags | O_NONBLOCK);
 
     // Enter the main loop for sending and receiving data
-    while (1)
-    {
+    while (1) {
+        // Prepare buffers for user input and server output
+        char user_input[1024];
+        char server_output[1024];
+        char *validated_input;
+
         // Prompt the user to enter a command
         printf("Enter command: ");
-        fgets(user_command, MAX_COMMAND_LENGTH, stdin); // Get user input from stdin
 
-        // Remove the trailing newline character from the user input
-        if (user_command[strlen(user_command) - 1] == '\n')
-        {
-            user_command[strlen(user_command) - 1] = '\0'; // Replace the newline character with a null terminator
+        // Read user input from standard input
+        fgets(user_input, 1024, stdin);
+
+        // Flush standard input to clear any remaining characters
+        fflush(stdin);
+
+        // Remove trailing newline character from user input
+        if (user_input[strlen(user_input) - 1] == '\n') {
+            user_input[strlen(user_input) - 1] = '\0';
         }
 
         // Call the validate function to validate the user input
-        result = process_command(user_command); // Pass the user input to the validate function and store the result in the pointer
+        validated_input = process_command(user_input);
 
         // Send the validated command to the server using the client socket
-        if (send(client_socket, result, strlen(result), 0) == -1)
-        {
-            perror("send failed"); // Print an error message if the send operation fails
-            exit(EXIT_FAILURE);
-        }
+        send(client_socket, validated_input, strlen(validated_input), 0);
 
         // Use select to check for data received from the server
-        fd_set read_fds; // Declare a file descriptor set for reading
-        FD_ZERO(&read_fds); // Initialize the file descriptor set to zero
-        FD_SET(client_socket, &read_fds); // Add the client socket to the file descriptor set
-        struct timeval timeout; // Declare a timeval struct for the timeout value
-        timeout.tv_sec = 1; // Set
-		timeout.tv_usec = 0;
+        fd_set read_fds;
+        FD_ZERO(&read_fds);
+        FD_SET(client_socket, &read_fds);
+        struct timeval timeout;
+        timeout.tv_sec = 1; // Set the timeout value in seconds
+        timeout.tv_usec = 0;
 
-		select_result = select(client_socket + 1, &read_fds, NULL, NULL, &timeout); // wait until there is data to read or timeout occurs
+        int select_result = select(client_socket + 1, &read_fds, NULL, NULL, &timeout);
 
-		if (select_result == -1) // check for errors in select
-		{
-			perror("select failed"); // print an error message
-			exit(EXIT_FAILURE); // exit the program with failure status
-		}
-		else if (select_result == 0) // if no data is available to read
-		{
-			// No data received from the server, continue to the next iteration
-			continue;
-		}
-		else // if data is available to read
-		{
-		// Receive data from the server and print it to the console
-		memset(server_output, 0, sizeof(server_output)); // initialize server_output to all zeroes
-		while (recv(client_socket, server_output, sizeof(server_output), 0) > 0) // loop through all the data received from the server
-		{
-			printf("%s", server_output); // print the received data to the console
-			memset(server_output, 0, sizeof(server_output)); // clear the buffer for the next iteration
-		}
-		}
-
-		// Close the client socket
-		if (close(client_socket) == -1) // check for errors in closing the socket
-		{
-			perror("close failed"); // print an error message
-			exit(EXIT_FAILURE); // exit the program with failure status
-		}
+        if (select_result == -1) {
+            perror("select failed");
+            exit(EXIT_FAILURE);
+        } else if (select_result == 0) {
+            // No data received from the server, continue to the next iteration
+            continue;
+        } else {
+            // Receive data from the server and print it to the console
+            memset(server_output, 0, sizeof(server_output));
+            while (recv(client_socket, server_output, sizeof(server_output), 0) > 0) {
+                printf("%s", server_output);
+                memset(server_output, 0, sizeof(server_output));
+            }
+        }
     }
-		return 0; // exit the program with success status
-		}
+
+    // Close the client socket
+    close(client_socket);
+
+    return 0;
+}
+
