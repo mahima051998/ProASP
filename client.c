@@ -152,7 +152,7 @@ int main()
         }
 
         // Call the validate function to validate the user input
-        result = validate(user_command); // Pass the user input to the validate function and store the result in the pointer
+        result = process_command(user_command); // Pass the user input to the validate function and store the result in the pointer
 
         // Send the validated command to the server using the client socket
         if (send(client_socket, result, strlen(result), 0) == -1)
