@@ -1,158 +1,111 @@
-#include<stdio.h>
-#include<netdb.h>
-#include<netinet/in.h>
-#include<stdlib.h>
-#include<string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <limits.h>
-#include <time.h>
-#include<sys/socket.h>
-#include<sys/types.h>
-#include<unistd.h> // read(), write(), close()
-#define MAX 1000
-#define PORT 8081
-#define SA struct sockaddr
-int  serverCounter=0;
-   
-int search_file(const char *path, const char *filename, char *result, struct stat *result_stat);
-void findfile(const char *filename, char *response);
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
 
-int search_file(const char *path, const char *filename, char *result, struct stat *result_stat)
- {
-    DIR *dir;
-    struct dirent *entry;
-    struct stat entry_stat;
-    int found = 0;
+// Define the maximum length of user command and server output
+#define MAX_COMMAND_LENGTH 1024
+#define MAX_OUTPUT_LENGTH 1024
 
-    dir = opendir(path);
-    if (!dir) {
-        return 0;
-    }
-
-    while ((entry = readdir(dir)) != NULL) {
-        char full_path[PATH_MAX];
-        snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
-        if (lstat(full_path, &entry_stat) == -1) {
-            continue;
-        }
-
-        if (S_ISDIR(entry_stat.st_mode)) {
-            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0) {
-                found = search_file(full_path, filename, result, result_stat);
-                if (found) {
-                    break;
-                }
-            }
-        } else if (S_ISREG(entry_stat.st_mode)) {
-            if (strcmp(entry->d_name, filename) == 0) {
-                strncpy(result, full_path, PATH_MAX);
-                *result_stat = entry_stat;
-                found = 1;
-                break;
-            }
-        }
-    }
-
-    closedir(dir);
-    return found;
-}
-
-void findfile(const char *filename, char *response) {
-    char home_dir[PATH_MAX];
-    struct stat file_stat;
-
-    system("cd ~");
-    getcwd(home_dir, sizeof(home_dir));
-
-    if (search_file(home_dir, (char *)filename, response, &file_stat)) {
-        time_t t = file_stat.st_mtime;
-        struct tm lt;
-        localtime_r(&t, &lt);
-        char date_created[20];
-        strftime(date_created, sizeof(date_created), "%Y-%m-%d %H:%M:%S", &lt);
-
-        char file_info[MAX];
-        snprintf(file_info, sizeof(file_info), "%s, %lld, %s", response, (long long)file_stat.st_size, date_created);
-        strncpy(response, file_info, MAX);
-    } else {
-        strncpy(response, "File not found", MAX);
-    }
-}
-
-
-
-// Function designed for chat between client and server.
-void serviceClient(int connfd)
+int main()
 {
-    char command[MAX];
-    int n;
-    char* error= "Error!!";
-    dup2(connfd, 1);
-    // infinite loop for chat
-    for (;;) {
-        bzero(command, MAX);
-        
-        //printf("\n%d\n", connfd);
-   
-        // read the message from client and copy it in buffer
-        if(n=read(connfd, command, sizeof(command))){
-        
-        }
-    }
-}
-   
-// Driver function
-int main(int argc, char* argv[])
-{
-    int sockfd, connfd, len, status, num=0;
-    struct sockaddr_in servaddr, cli;
-   
-    // socket create and verification
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == -1) {
-        printf("socket creation failed...\n");
-        exit(0);
-    }
-    else
-        printf("Socket successfully created..\n");
-    bzero(&servaddr, sizeof(servaddr));
-   
-    // assign IP, PORT
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(PORT);
-    
-    // Binding newly created socket to given IP and verification
-    if ((bind(sockfd, (SA*)&servaddr, sizeof(servaddr))) != 0) {
-        printf("socket bind failed...\n");
-        exit(0);
-    }
-    else
-        printf("Socket successfully binded..\n");
-   
-    // Now server is ready to listen and verification
-    if ((listen(sockfd, 5)) != 0) {
-        printf("Listen failed...\n");
-        exit(0);
-    }
-    else
-        printf("Server listening..\n");
-    len = sizeof(cli);
+    int client_socket; // Declare a client socket file descriptor
+    struct sockaddr_in server_address; // Declare a server address struct
+    char user_command[MAX_COMMAND_LENGTH]; // Declare a buffer to store user command input
+    char server_output[MAX_OUTPUT_LENGTH]; // Declare a buffer to store server output
+    char *result; // Declare a pointer to store the result of the validate function
+    int flags, select_result; // Declare variables for storing socket flags and select results
 
-    // Accept the data packet from client and verification
-    while(1){
-        // printf("%d\n",servaddr.sin_port);
-        // printf("%d\n", loadBalanceCounter);
-        connfd = accept(sockfd, (SA*)&cli, &len);
-        printf("Connected to client\n");
-        if (connfd < 0) {
-            printf("server accept failed...\n");
-            exit(0);
-        }
-        else if(!fork())
-            serviceClient(connfd);
-        close(connfd);
+    // Create a TCP socket with IPv4 address family and default protocol (0)
+    client_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (client_socket == -1)
+    {
+        perror("socket failed"); // Print an error message if the socket creation fails
+        exit(EXIT_FAILURE);
     }
-    close(sockfd);
-}
+
+    // Set up the server address
+    memset(&server_address, 0, sizeof(server_address)); // Zero out the server address struct
+    server_address.sin_family = AF_INET; // Set the address family to IPv4
+    server_address.sin_port = htons(3000); // Set the port number to 3000 and convert it to network byte order
+    server_address.sin_addr.s_addr = inet_addr("127.0.0.1"); // Set the IP address to localhost (127.0.0.1)
+
+    // Connect to the server using the client socket and server address
+    if (connect(client_socket, (struct sockaddr *)&server_address, sizeof(server_address)) == -1)
+    {
+        perror("connect failed"); // Print an error message if the connection fails
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the socket to non-blocking mode
+    flags = fcntl(client_socket, F_GETFL, 0); // Get the current socket flags
+    fcntl(client_socket, F_SETFL, flags | O_NONBLOCK); // Set the socket to non-blocking mode
+
+    // Enter the main loop for sending and receiving data
+    while (1)
+    {
+        // Prompt the user to enter a command
+        printf("Enter command: ");
+        fgets(user_command, MAX_COMMAND_LENGTH, stdin); // Get user input from stdin
+
+        // Remove the trailing newline character from the user input
+        if (user_command[strlen(user_command) - 1] == '\n')
+        {
+            user_command[strlen(user_command) - 1] = '\0'; // Replace the newline character with a null terminator
+        }
+
+        // Call the validate function to validate the user input
+        result = validate(user_command); // Pass the user input to the validate function and store the result in the pointer
+
+        // Send the validated command to the server using the client socket
+        if (send(client_socket, result, strlen(result), 0) == -1)
+        {
+            perror("send failed"); // Print an error message if the send operation fails
+            exit(EXIT_FAILURE);
+        }
+
+        // Use select to check for data received from the server
+        fd_set read_fds; // Declare a file descriptor set for reading
+        FD_ZERO(&read_fds); // Initialize the file descriptor set to zero
+        FD_SET(client_socket, &read_fds); // Add the client socket to the file descriptor set
+        struct timeval timeout; // Declare a timeval struct for the timeout value
+        timeout.tv_sec = 1; // Set
+		timeout.tv_usec = 0;
+
+		select_result = select(client_socket + 1, &read_fds, NULL, NULL, &timeout); // wait until there is data to read or timeout occurs
+
+		if (select_result == -1) // check for errors in select
+		{
+			perror("select failed"); // print an error message
+			exit(EXIT_FAILURE); // exit the program with failure status
+		}
+		else if (select_result == 0) // if no data is available to read
+		{
+			// No data received from the server, continue to the next iteration
+			continue;
+		}
+		else // if data is available to read
+		{
+		// Receive data from the server and print it to the console
+		memset(server_output, 0, sizeof(server_output)); // initialize server_output to all zeroes
+		while (recv(client_socket, server_output, sizeof(server_output), 0) > 0) // loop through all the data received from the server
+		{
+			printf("%s", server_output); // print the received data to the console
+			memset(server_output, 0, sizeof(server_output)); // clear the buffer for the next iteration
+		}
+		}
+
+		// Close the client socket
+		if (close(client_socket) == -1) // check for errors in closing the socket
+		{
+			perror("close failed"); // print an error message
+			exit(EXIT_FAILURE); // exit the program with failure status
+		}
+
+		return 0; // exit the program with success status
+		}
