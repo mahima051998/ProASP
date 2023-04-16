@@ -59,8 +59,8 @@ int main()
             user_command[strlen(user_command) - 1] = '\0'; // Replace the newline character with a null terminator
         }
 
-        // Call the validate function to validate the user input
-        result = validate(user_command); // Pass the user input to the validate function and store the result in the pointer
+        // Call the process_command function to validate the user input
+        result = process_command(user_command); // Pass the user input to the process_command function and store the result in the pointer
 
         // Send the validated command to the server using the client socket
         if (send(client_socket, result, strlen(result), 0) == -1)
@@ -106,6 +106,6 @@ int main()
 			perror("close failed"); // print an error message
 			exit(EXIT_FAILURE); // exit the program with failure status
 		}
-
+}
 		return 0; // exit the program with success status
 		}
