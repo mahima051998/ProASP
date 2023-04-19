@@ -91,6 +91,31 @@ char* process_command(char* input) {
 }
 
 int main() {
+
+	 FILE *fp;
+   int num;
+   fp = fopen("server_count.txt", "r");
+   if (fp == NULL) {
+      printf("Error while opening server_count file!");
+      return 1;
+   }
+   if (fscanf(fp, "%d", &num) == 1) {
+      
+   } 
+	fclose(fp);
+	FILE *fp2;
+   int num2;
+   fp2 = fopen("mirror_count.txt", "r");
+   if (fp2 == NULL) {
+      printf("Error while opening mirror_count file!");
+      return 1;
+   }
+   if (fscanf(fp2, "%d", &num2) == 1) {
+      
+   } else {
+      printf("The mirror_count file is empty or does not contain a number.");
+   }
+   fclose(fp2);
     // Create a socket for the client
     int client_socket;
     struct sockaddr_in server_address;
@@ -172,4 +197,3 @@ int main() {
 
     return 0;
 }
-
