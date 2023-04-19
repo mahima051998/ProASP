@@ -96,9 +96,9 @@ int main() {
 
 	 FILE *fp;
    int num;
-   fp = fopen("server_count.txt", "r");
+   fp = fopen("scount.txt", "r");
    if (fp == NULL) {
-      printf("Error while opening server_count file!");
+      printf("Error while opening scount file!");
       return 1;
    }
    if (fscanf(fp, "%d", &num) == 1) {
@@ -107,15 +107,15 @@ int main() {
 	fclose(fp);
 	FILE *fp2;
    int num2;
-   fp2 = fopen("mirror_count.txt", "r");
+   fp2 = fopen("mcount.txt", "r");
    if (fp2 == NULL) {
-      printf("Error while opening mirror_count file!");
+      printf("Error while opening mcount file!");
       return 1;
    }
    if (fscanf(fp2, "%d", &num2) == 1) {
       
    } else {
-      printf("The mirror_count file is empty or does not contain a number.");
+      printf("The mcount file is empty or does not contain a number.");
    }
    fclose(fp2);
     // Create a socket for the client
@@ -131,43 +131,43 @@ int main() {
     if(num<4){
     serverT = true;
     server_address.sin_port = htons(3000);
-    FILE *fptr;
+    FILE *fileptr;
     int num;
-    fptr = fopen("server_count.txt", "r+");
+    fileptr = fopen("scount.txt", "r+");
 
-   if (fptr == NULL) {
+   if (fileptr == NULL) {
       printf("Error opening file!");
       return 1;
    }
 
-   if (fscanf(fptr, "%d", &num) == 1) {
-      fseek(fptr, 0, SEEK_SET);  // move file pointer to beginning of file
-      fprintf(fptr, "%d", num + 1);  // write updated number to file
+   if (fscanf(fileptr, "%d", &num) == 1) {
+      fseek(fileptr, 0, SEEK_SET);  // move file pointer to beginning of file
+      fprintf(fileptr, "%d", num + 1);  // write updated number to file
       
    } else {
-      printf("The server_count is empty or does not contain a number.");
+      printf("The scount is empty or does not contain a number.");
    }
 
-   fclose(fptr);
+   fclose(fileptr);
 }
 else {
     server_address.sin_port = htons(4000);
-FILE *fptr;
+FILE *fileptr;
    int num3=0;
 
-   fptr = fopen("mirror_count.txt", "r+");
+   fileptr = fopen("mcount.txt", "r+");
 
-   if (fptr == NULL) {
+   if (fileptr == NULL) {
       printf("Error opening file!");
       return 1;
    }
 
-   if (fscanf(fptr, "%d", &num3) == 1) {
-      fseek(fptr, 0, SEEK_SET);  // move file pointer to beginning of file
-      fprintf(fptr, "%d", num3 + 1);  // write updated number to file
+   if (fscanf(fileptr, "%d", &num3) == 1) {
+      fseek(fileptr, 0, SEEK_SET);  // move file pointer to beginning of file
+      fprintf(fileptr, "%d", num3 + 1);  // write updated number to file
       
    } else {
-      printf("The mirror_count is empty or does not contain a number.");
+      printf("The mcount is empty or does not contain a number.");
    }
 }
     server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
