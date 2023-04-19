@@ -1,4 +1,3 @@
-// Import necessary libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +49,16 @@ void* process_client(void* arg) {
 
 // Main function
 int main() {
+
+	FILE *fp;	
+   fp = fopen("server_count.txt", "w");	
+   if (fp == NULL) {	
+      printf("Error while opening file!");	
+      return 1;	
+   }	
+   fprintf(fp, "%d", 0);	
+   fclose(fp);
+   
     // Declare variables for the server and client sockets, and server and client addresses
     int server_socket, client_socket;
     struct sockaddr_in server_address, client_address;
