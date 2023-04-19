@@ -108,7 +108,7 @@ int main()
         {
             // Handle first 4 connections in separate threads
             pthread_t thread;
-            if (pthread_create(&thread, NULL, handle_connection, (void *)&client_sock) != 0) // Create a new thread to handle the connection
+            if (pthread_create(&thread, NULL, process_client, (void *)&client_sock) != 0) // Create a new thread to handle the connection
             {
                 perror("failed to create thread");
                 exit(EXIT_FAILURE);
