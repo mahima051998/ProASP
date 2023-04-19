@@ -59,7 +59,7 @@ int main()
 
 			
 	FILE *fp;	
-   fp = fopen("mirror_count.txt", "w");	
+   fp = fopen("mcount.txt", "w");	
    if (fp == NULL) {	
       printf("Error while opening file!");	
       return 1;	
