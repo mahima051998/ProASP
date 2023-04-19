@@ -11,6 +11,8 @@
 #define PORT 3000
 #define BUFFER_SIZE 1024
 
+bool serverT = false;
+
 // This function takes a string input as a command and processes it, returning the result as a string.
 char* process_command(char* input) {
     // Allocate memory for the result string and create an array to store command arguments.
