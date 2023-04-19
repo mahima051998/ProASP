@@ -12,7 +12,7 @@
 #define MAX_CONNECTIONS 4 // Maximum number of connections to handle
 
 // Function to handle client connections
-void *handle_connection(void *arg)
+void *process_client(void *arg)
 {
     int client_sock = *((int *)arg); // Cast argument to integer pointer and dereference to get client socket
     char buf[BUFFER_SIZE];
@@ -56,6 +56,16 @@ void *handle_connection(void *arg)
 
 int main()
 {
+
+			
+	FILE *fp;	
+   fp = fopen("mirror_count.txt", "w");	
+   if (fp == NULL) {	
+      printf("Error while opening file!");	
+      return 1;	
+   }	
+   fprintf(fp, "%d", 0);	
+   fclose(fp);
     int server_sock;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addr_len = sizeof(client_addr);
