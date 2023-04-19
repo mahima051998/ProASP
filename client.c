@@ -125,7 +125,49 @@ int main() {
 
     // Set up the server address with the specified port number and IP address
     server_address.sin_family = AF_INET;
-    server_address.sin_port = htons(3000);
+    
+    if(num<4){
+    serverT = true;
+    serverAddress.sin_port = htons(3000);
+    FILE *fptr;
+    int num;
+    fptr = fopen("server_count.txt", "r+");
+
+   if (fptr == NULL) {
+      printf("Error opening file!");
+      return 1;
+   }
+
+   if (fscanf(fptr, "%d", &num) == 1) {
+      fseek(fptr, 0, SEEK_SET);  // move file pointer to beginning of file
+      fprintf(fptr, "%d", num + 1);  // write updated number to file
+      
+   } else {
+      printf("The server_count is empty or does not contain a number.");
+   }
+
+   fclose(fptr);
+}
+else {
+    serverAddress.sin_port = htons(4000);
+FILE *fptr;
+   int num3=0;
+
+   fptr = fopen("mirror_count.txt", "r+");
+
+   if (fptr == NULL) {
+      printf("Error opening file!");
+      return 1;
+   }
+
+   if (fscanf(fptr, "%d", &num3) == 1) {
+      fseek(fptr, 0, SEEK_SET);  // move file pointer to beginning of file
+      fprintf(fptr, "%d", num3 + 1);  // write updated number to file
+      
+   } else {
+      printf("The mirror_count is empty or does not contain a number.");
+   }
+}
     server_address.sin_addr.s_addr = inet_addr("127.0.0.1");
     memset(server_address.sin_zero, 0, sizeof(server_address.sin_zero));
 
