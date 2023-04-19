@@ -130,7 +130,7 @@ int main() {
     
     if(num<4){
     serverT = true;
-    serverAddress.sin_port = htons(3000);
+    server_address.sin_port = htons(3000);
     FILE *fptr;
     int num;
     fptr = fopen("server_count.txt", "r+");
@@ -151,7 +151,7 @@ int main() {
    fclose(fptr);
 }
 else {
-    serverAddress.sin_port = htons(4000);
+    server_address.sin_port = htons(4000);
 FILE *fptr;
    int num3=0;
 
