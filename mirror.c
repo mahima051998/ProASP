@@ -98,6 +98,7 @@ int main()
     while (1)
     {
         int client_sock = accept(server_sock, (struct sockaddr *)&client_addr, &addr_len); // Accept a client connection
+	printf("Connection established with client\n");
         if (client_sock == -1)
         {
             perror("accept failed");
