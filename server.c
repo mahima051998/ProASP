@@ -51,7 +51,7 @@ void* process_client(void* arg) {
 int main() {
 
 	FILE *fp;	
-   fp = fopen("server_count.txt", "w");	
+   fp = fopen("scount.txt", "w");	
    if (fp == NULL) {	
       printf("Error while opening file!");	
       return 1;	
